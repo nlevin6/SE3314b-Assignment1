@@ -16,9 +16,10 @@ module.exports = {
             let type = parseBitPacket(data, 4, 2);// Set the response type (Query, Found, Not found, Busy)
 
             if (version == 9 && type == 0) {
-                let fileName = parseFileNameFromPacket(packet);
+                let fileName = parseFileNameFromPacket(data);
                 console.log('Requested filename: ' + fileName);
 
+                // TODO: from here this needs fixing. The file is not being read correctly
                 let response = ITPpacket.getPacket(fileName, imagesFolder);
                 console.log('Generated response packet: ' + response);
 
@@ -43,7 +44,7 @@ module.exports = {
 };
 
 function parseFileNameFromPacket(data) {
-    return data.slice(128).toString('utf-8').trim();
+    return data.toString('utf-8').substring(12);
 }
 
 

@@ -11,7 +11,8 @@ module.exports = {
   //getBytePacket: returns the entire packet in bytes
   //--------------------------
   getBytePacket: function (fileName, version) {
-      let packet = Buffer.alloc(12);
+      let fileNameSize = Buffer.from(fileName).length; // Get the image name length
+      let packet = Buffer.alloc(12 + fileNameSize);// Create a buffer to hold the packet
       storeBitPacket(packet, version, 0, 4);// Set the ITP version field (V) to 9
       storeBitPacket(packet, 0, 4, 26);// Reserved 26 bits
       storeBitPacket(packet, 0, 30, 2);// Set the response type query (which is 0)
@@ -20,11 +21,12 @@ module.exports = {
       storeBitPacket(packet, timestamp, 32, 32);// Set the timestamp
 
       storeBitPacket(packet, 1, 64, 4);// Set image type field to 1 (PNG)
-      let fileNameSize = Buffer.from(fileName).length; // Get the image name length
       storeBitPacket(packet, fileNameSize, 68, 28);// Set the image name length
 
-      let fileNameBytes = Buffer.from(fileName) // Convert the file name to bytes
-      fileNameBytes.copy(packet,12); // Copy the file name bytes to the packet
+      let fileNameBytes = stringToBytes(fileName);
+      for (let i = 0; i < fileNameSize; i++) {
+        storeBitPacket(packet, fileNameBytes[i], 96 + i * 8, 8);// Set the image name
+      }
 
       return packet;
   },
