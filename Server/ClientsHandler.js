@@ -1,7 +1,9 @@
 let ITPpacket = require('./ITPResponse');
 let singleton = require('./Singleton');
+const path = require("path");
 const imagesFolder = path.join(__dirname, 'images');
 const fs = require('fs');
+
 
 module.exports = {
     handleClientJoining: function (sock) {
@@ -14,7 +16,8 @@ module.exports = {
             let type = parseBitPacket(data, 4, 2);// Set the response type (Query, Found, Not found, Busy)
 
             if (version == 9 && type == 0) { // we are using version 9 in this lab and the type is a query
-                let response = ITPpacket.getPacket();// Get the ITP response packet
+                let fileName = parseFileNameFromPacket(packet);// Get the image name from the packet
+                let response = ITPpacket.getPacket(fileName);// Get the ITP response packet
                 console.log('Sending data to client: ' + response);
                 sock.write(Buffer.from(response, 'hex'));// Send the ITP response packet to the client
 
@@ -36,6 +39,9 @@ module.exports = {
     }
 };
 
+function parseFileNameFromPacket(packet) {
+    return packet.slice(128).toString('utf-8').trim();
+}
 
 //// Some usefull methods ////
 // Feel free to use them, but DO NOT change or add any code in these methods.

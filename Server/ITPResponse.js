@@ -1,4 +1,5 @@
 let singleton = require('./Singleton');
+const fs = require('fs');
 
 module.exports = {
 
@@ -9,7 +10,7 @@ module.exports = {
     //--------------------------
     //getpacket: returns the entire packet
     //--------------------------
-    getPacket: function () {
+    getPacket: function (fileName) {
         let packet = Buffer.alloc(12);// Create a buffer to store the ITP response packet
         storeBitPacket(packet, 9, 0, 4);// Set the ITP version field (V) to 9
         storeBitPacket(packet, 0, 4, 2);// Set the response type (Query, Found, Not found, Busy)
@@ -18,9 +19,14 @@ module.exports = {
         let timestamp = singleton.getTimestamp(); // Get the current timestamp
         storeBitPacket(packet, timestamp, 32, 32);// 32 bits for timestamp
 
+        let fileNameBytes = Buffer.from(fileName); // Read the image file
+        let fileNameLength = fileNameBytes.length; // Get the image name length
+
         // Set the image size
-        let imageSize = 0;
+        let imageSize = fs.statSync('images/' + fileName).size; // Get the image size
         storeBitPacket(packet, imageSize, 64, 32); // 32 bits for image size
+        storeBitPacket(packet, fileNameLength, 96, 4); // Set image type field to 1 (PNG)
+        fileNameBytes.copy(packet, 128, 0, fileNameLength); // Copy the file name bytes to the packet
 
         return packet.toString('hex'); // Convert the buffer to a hex string
     }

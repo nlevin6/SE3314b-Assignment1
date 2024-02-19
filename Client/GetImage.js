@@ -10,6 +10,8 @@ const serverPort = parseInt(argv.p) || 3000;
 const fileName = argv.q || "";
 const version = argv.v || 9;
 
+
+
 if (!fileName) {
     console.error("Please provide a valid image file name using -q flag.");
     process.exit(1);
@@ -27,6 +29,7 @@ client.connect(serverPort, serverAddress, function () {
 
 client.on("data", function (data) {
     const packet = data.toString("hex");
+    const imageSize = parseBitPacket(data, 64,32);
     console.log("Received data from server: " + packet);
 
     // extract image data from the packet and save it to a file
