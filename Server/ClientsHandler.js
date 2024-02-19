@@ -15,13 +15,16 @@ module.exports = {
             let version = parseBitPacket(data, 0, 4);// Set the ITP version field (V) to 9
             let type = parseBitPacket(data, 4, 2);// Set the response type (Query, Found, Not found, Busy)
 
-            if (version == 9 && type == 0) { // we are using version 9 in this lab and the type is a query
-                let fileName = parseFileNameFromPacket(packet);// Get the image name from the packet
-                let response = ITPpacket.getPacket(fileName);// Get the ITP response packet
-                console.log('Sending data to client: ' + response);
-                sock.write(Buffer.from(response, 'hex'));// Send the ITP response packet to the client
+            if (version == 9 && type == 0) {
+                let fileName = parseFileNameFromPacket(packet);
+                console.log('Requested filename: ' + fileName);
 
-                // Use imagesFolder variable to get the list of images in the images folder
+                let response = ITPpacket.getPacket(fileName, imagesFolder);
+                console.log('Generated response packet: ' + response);
+
+                console.log('Sending data to client: ' + response);
+                sock.write(Buffer.from(response, 'hex'));
+
                 fs.readdir(imagesFolder, (err, files) => {
                     if (err) {
                         console.log('Error reading images folder: ' + err);
@@ -29,8 +32,8 @@ module.exports = {
                         console.log('Images in the folder: ' + files);
                     }
                 });
-
             }
+
         });
 
         sock.on('close', function () {// When the client leaves
@@ -39,9 +42,11 @@ module.exports = {
     }
 };
 
-function parseFileNameFromPacket(packet) {
-    return packet.slice(128).toString('utf-8').trim();
+function parseFileNameFromPacket(data) {
+    return data.slice(128).toString('utf-8').trim();
 }
+
+
 
 //// Some usefull methods ////
 // Feel free to use them, but DO NOT change or add any code in these methods.
