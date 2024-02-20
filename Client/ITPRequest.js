@@ -1,36 +1,61 @@
-
-
 // You may need to add some statements here
 
 module.exports = {
   init: function () {
-    // You may need to add some statements here
+    // feel free to add function parameters as needed
+    //
+    // enter your code here
+    //
   },
 
   //--------------------------
   //getBytePacket: returns the entire packet in bytes
   //--------------------------
-  getBytePacket: function (fileName, version) {
-      let fileNameSize = Buffer.from(fileName).length; // Get the image name length
-      let packet = Buffer.alloc(12 + fileNameSize);// Create a buffer to hold the packet
-      storeBitPacket(packet, version, 0, 4);// Set the ITP version field (V) to 9
-      storeBitPacket(packet, 0, 4, 26);// Reserved 26 bits
-      storeBitPacket(packet, 0, 30, 2);// Set the response type query (which is 0)
+  getBytePacket: function (fileFullName, version) {
+    // split into name and extension
+    const name = fileFullName.split('.')[0];
+    const extension = fileFullName.split('.').pop().toLowerCase();
 
-      let timestamp = Math.floor(Date.now() / 1000);// Get the current timestamp
-      storeBitPacket(packet, timestamp, 32, 32);// Set the timestamp
+    let fileNameSize = Buffer.from(name).length; // Get the image name length
+    let packet = Buffer.alloc(12 + fileNameSize);// Create a buffer to hold the packet
 
-      storeBitPacket(packet, 1, 64, 4);// Set image type field to 1 (PNG)
-      storeBitPacket(packet, fileNameSize, 68, 28);// Set the image name length
+    storeBitPacket(packet, version, 0, 4);// Set the ITP version field (V) to 9
+    storeBitPacket(packet, 0, 4, 26);// Reserved 26 bits
+    storeBitPacket(packet, 0, 30, 2);// Set the request type to "query" (which is 0)
 
-      let fileNameBytes = stringToBytes(fileName);
-      for (let i = 0; i < fileNameSize; i++) {
-        storeBitPacket(packet, fileNameBytes[i], 96 + i * 8, 8);// Set the image name
-      }
+    let timestamp = Math.floor(Date.now() / 1000);// Get the current timestamp
+    storeBitPacket(packet, timestamp, 32, 32);// Set the timestamp
 
-      return packet;
+    storeBitPacket(packet, getExtensionId(extension), 64, 4);// Set image type
+    storeBitPacket(packet, fileNameSize, 68, 28);// Set the image name length
+
+    let fileNameBytes = stringToBytes(name);
+    for (let i = 0; i < fileNameSize; i++) {
+      storeBitPacket(packet, fileNameBytes[i], 96 + i * 8, 8);
+    }
+
+    return packet;
   },
 };
+
+function getExtensionId(extension) {
+  switch (extension) {
+    case 'png':
+      return 1;
+    case 'bmp':
+      return 2;
+    case 'tiff':
+      return 3;
+    case 'jpeg':
+      return 4;
+    case 'gif':
+      return 5;
+    case 'raw':
+      return 15;
+    default:
+      return 0;
+  }
+}
 
 //// Some usefull methods ////
 // Feel free to use them, but DO NOT change or add any code in these methods.
