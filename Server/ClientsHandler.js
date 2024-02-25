@@ -7,47 +7,76 @@ const fs = require('fs');
 
 module.exports = {
     handleClientJoining: function (sock) {
-        console.log('Client ' + sock.remoteAddress + ':' + sock.remotePort + ' joined');
-        sock.on('data', function (data) {
-            let packet = data.toString('hex');// Convert the buffer to a hex string
-            console.log('Received data from client: ' + packet);
+        const clientId = singleton.getRandomInt(1, 999); // Generate a random client ID between 1 and 999
+        console.log('\nClient-' + clientId + ' is connected at timestamp: ' + singleton.getTimestamp());
+        sock.on('data', function (data) { // When the client sends a packet
+            console.log("\nITP packet received:");
+            printPacketBit(data);// Print the entire packet in bits format
 
-            let version = parseBitPacket(data, 0, 4);// Set the ITP version field (V) to 9
-            let type = parseBitPacket(data, 4, 2);// Set the response type (Query, Found, Not found, Busy)
+            const version = parseBitPacket(data, 0, 4);
+            const type = parseBitPacket(data, 30, 2);
+            const timestamp = singleton.getTimestamp();
+            const extension = parseBitPacket(data, 64, 4);
+            const fileNameSize = parseBitPacket(data, 68, 28);
+            const fileName = bytesToString(data.slice(12, 12 + fileNameSize));
 
-            if (version == 9 && type == 0) {
-                let fileName = parseFileNameFromPacket(data);
-                console.log('Requested filename: ' + fileName);
+            // Print the client requests
+            console.log("\nClient requests:");
+            console.log("    --ITP version: " + version);
+            console.log("    --Timestamp: " + timestamp);
+            console.log("    --Request type: " + getRequestTypeName(type));
+            console.log("    --Image file extension(s): " + getExtensionName(extension));
+            console.log("    --Image file name: " + fileName);
 
-                // TODO: from here this needs fixing. The file is not being read correctly
-                let response = ITPpacket.getPacket(fileName, imagesFolder);
-                console.log('Generated response packet: ' + response);
-
-                console.log('Sending data to client: ' + response);
-                sock.write(Buffer.from(response, 'hex'));
-
-                fs.readdir(imagesFolder, (err, files) => {
-                    if (err) {
-                        console.log('Error reading images folder: ' + err);
-                    } else {
-                        console.log('Images in the folder: ' + files);
-                    }
-                });
+            // Check if the ITP version is supported
+            if (version !== 9) {
+                console.log("Unsupported ITP version");
+                return;
+            }
+            // Check if the request type is supported
+            if (type !== 0) {
+                console.log("Unsupported request type");
+                return;
             }
 
+            const response = ITPpacket.getPacket(fileName + "." + getExtensionName(extension), imagesFolder);
+            sock.write(response); // Send the response packet
         });
 
         sock.on('close', function () {// When the client leaves
-            console.log('Client ' + sock.remoteAddress + ':' + sock.remotePort + ' left');
+            console.log('\nClient-' + clientId + ' closed the connection');
         });
     }
 };
 
-function parseFileNameFromPacket(data) {
-    return data.toString('utf-8').substring(12);
+// Returns the request type name
+function getRequestTypeName(type) {
+    switch (type) {
+        case 0:
+            return "Query";
+        default:
+            return "Unknown";
+    }
 }
-
-
+// Returns the image extension name
+function getExtensionName(extension) {
+    switch (extension) {
+        case 1:
+            return "png";
+        case 2:
+            return "bmp";
+        case 3:
+            return "tiff";
+        case 4:
+            return "jpeg";
+        case 5:
+            return "gif";
+        case 15:
+            return "raw";
+        default:
+            return null;
+    }
+}
 
 //// Some usefull methods ////
 // Feel free to use them, but DO NOT change or add any code in these methods.
