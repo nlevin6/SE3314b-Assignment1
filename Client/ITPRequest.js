@@ -1,11 +1,5 @@
-// You may need to add some statements here
-
 module.exports = {
   init: function () {
-    // feel free to add function parameters as needed
-    //
-    // enter your code here
-    //
   },
 
   //--------------------------
@@ -38,7 +32,7 @@ module.exports = {
   },
 };
 
-function getExtensionId(extension) {
+function getExtensionId(extension) { // Get the image type
   switch (extension) {
     case 'png':
       return 1;

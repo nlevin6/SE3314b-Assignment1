@@ -15,7 +15,7 @@ module.exports = {
     const image = path.join(imagesFolder, fileName);
     const exists = fs.existsSync(image);
     let size = 0;
-    if (exists) {
+    if (exists) { // if image exists, get the size
       size = fs.statSync(image).size;
     }
 
